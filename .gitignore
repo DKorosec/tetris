@@ -1,0 +1,3 @@
+.vscode/**
+env/**
+lib/**/__pycache__/**
