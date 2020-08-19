@@ -1,4 +1,5 @@
 import math
+import time
 import tkinter as tk
 import numpy as np
 from random import random
@@ -8,8 +9,9 @@ from lib.base_types import TetrominGrid
 GRID_WIDTH = 10
 GRID_HEIGHT = 20
 SQUARE_SIZE_PX = 30
-CANVAS_WIDTH = GRID_WIDTH * SQUARE_SIZE_PX
-CANVAS_HEIGHT = GRID_HEIGHT * SQUARE_SIZE_PX
+CANVAS_BORDER_WIDTH = 10
+CANVAS_WIDTH = GRID_WIDTH * SQUARE_SIZE_PX + CANVAS_BORDER_WIDTH
+CANVAS_HEIGHT = GRID_HEIGHT * SQUARE_SIZE_PX + CANVAS_BORDER_WIDTH
 
 
 tk_root = tk.Tk()
@@ -18,13 +20,30 @@ canvas = tk.Canvas(tk_root, width=CANVAS_WIDTH, height=CANVAS_HEIGHT)
 canvas.pack()
 
 
+def ms_now():
+    return int(time.time()*1000)
+
+
 class TetrisStateMachine:
     def __init__(self):
         self.width = GRID_WIDTH
         self.height = GRID_HEIGHT
         self.grid = [[None for j in range(self.width)]
                      for i in range(self.height)]
+        self.last_game_tick_ms = 0
+        self.game_tick_ms_T = 500
         self.set_next_tetromin()
+
+    def should_game_tick(self):
+        now = ms_now()
+        return now - self.last_game_tick_ms >= self.game_tick_ms_T
+
+    def skip_game_tick(self):
+        self.last_game_tick_ms = ms_now()
+
+    def next_game_tick(self):
+        self.last_game_tick_ms = ms_now()
+        self.tetromin_down()
 
     def set_next_tetromin(self):
         tetro = tetromin_list[int(random()*len(tetromin_list))]()
@@ -96,6 +115,7 @@ class TetrisStateMachine:
         self.break_full_rows()
 
     def tetromin_down(self, process_logic_on_collision=True):
+        self.skip_game_tick()
         self.current_tetromin['y'] += 1
         if collides := self.does_current_tetromin_collide():
             self.current_tetromin['y'] -= 1
@@ -148,37 +168,35 @@ TSM = TetrisStateMachine()
 
 
 def key_press(event):
-    print("pressed", event, repr(event.keysym), event.keysym == 'Left')
+    print("key pressed", event, repr(event.keysym))
     if event.keysym == 'Up':
         TSM.tetromin_rotate()
-    if event.keysym == 'Left':
+
+    elif event.keysym == 'Left':
         TSM.tetromin_left()
-    if event.keysym == 'Right':
+
+    elif event.keysym == 'Right':
         TSM.tetromin_right()
-    if event.keysym == 'Down':
+
+    elif event.keysym == 'Down':
         TSM.tetromin_down()
-    if event.keysym == 'space':
+
+    elif event.keysym == 'space':
         TSM.tetromin_falldown()
 
-    on_gameloop(False)
-    # TODO: state machine .key_left(), key_right(), ...
+    render(canvas, TSM.get_render_grid())
 
 
-def on_gameloop(auto_loop=True):
-    # TODO: Remove auto_loop=True.
-    # do deltaTime and render if enough time was passed. This way we can correctly implement fast down shift of tetromins.
-
-    x = int(random() * GRID_WIDTH)
-    y = int(random() * GRID_HEIGHT)
-    grid = TSM.get_render_grid()
-    if auto_loop:
-        # TSM.tetro_down() -> logic checks if col and spawns next.
-        TSM.tetromin_down()
-        tk_root.after(500, on_gameloop)
-    render(canvas, grid)
+def on_gameloop():
+    if TSM.should_game_tick():
+        TSM.next_game_tick()
+        render(canvas, TSM.get_render_grid())
+    tk_root.after(16, on_gameloop)
 
 
 def render_rect(canvas, x, y, dim, fill):
+    x += CANVAS_BORDER_WIDTH // 2 + 1
+    y += CANVAS_BORDER_WIDTH // 2 + 1
     canvas.create_rectangle(x, y, x+dim, y+dim, fill=fill)
 
 
