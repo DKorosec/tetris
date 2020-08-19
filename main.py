@@ -60,6 +60,29 @@ class TetrisStateMachine:
 
         return False
 
+    def is_row_full(self, row: int) -> bool:
+        for x in range(self.width):
+            if not self.grid[row][x]:
+                return False
+        return True
+
+    def remove_row(self, row: int):
+        while row >= 0:
+            for x in range(self.width):
+                self.grid[row][x] = None
+                if row-1 >= 0:
+                    self.grid[row][x] = self.grid[row-1][x]
+            row -= 1
+
+    def break_full_rows(self):
+        y = self.height - 1
+        # go up the rows!
+        while y >= 0:
+            if self.is_row_full(y):
+                self.remove_row(y)
+            else:
+                y -= 1
+
     def burn_current_tetromin_into_grid(self):
         # TODO: this will crash when figure has collision at the top of the grid
         # the collision check ignores the y < 0 checks and burning into the grid will go out of bounds
@@ -69,6 +92,8 @@ class TetrisStateMachine:
             for x in range(tetro.width()):
                 if tetro_grid[y][x]:
                     self.grid[ty+y][tx+x] = tetro.color
+
+        self.break_full_rows()
 
     def tetromin_down(self, process_logic_on_collision=True):
         self.current_tetromin['y'] += 1
@@ -98,7 +123,8 @@ class TetrisStateMachine:
         return collides
 
     def tetromin_falldown(self):
-        raise "not implemented"
+        while not self.tetromin_down():
+            pass
 
     def get_render_grid(self):
         render_grid = [[self.grid[i][j] for j in range(self.width)]
