@@ -3,6 +3,7 @@ import tkinter as tk
 import numpy as np
 from random import random
 from lib.tetromins.imports import tetromin_list
+from lib.base_types import TetrominGrid
 
 GRID_WIDTH = 10
 GRID_HEIGHT = 20
@@ -27,20 +28,86 @@ class TetrisStateMachine:
 
     def set_next_tetromin(self):
         tetro = tetromin_list[int(random()*len(tetromin_list))]()
+        # TODO: requires work with spawning in the "invisible zone"
+        # getting the real bottom of tetromin, because some squares are 0.
         self.current_tetromin = {
             'tetro': tetro,
             'x': self.width//2,
             'y': 0
         }
 
+    def unpack_current_tetromin(self):
+        tetro = self.current_tetromin['tetro']
+        tx = self.current_tetromin['x']
+        ty = self.current_tetromin['y']
+        return tetro, tx, ty
+
+    def does_current_tetromin_collide(self) -> bool:
+        tetro, tx, ty = self.unpack_current_tetromin()
+        tetro_grid = tetro.current_grid()
+
+        for y in range(tetro.height()):
+            for x in range(tetro.width()):
+                gx = tx + x
+                gy = ty + y
+                if not tetro_grid[y][x]:
+                    continue
+
+                out_of_bounds = gx < 0 or gx >= self.width or gy < 0 or gy >= self.height
+
+                if out_of_bounds or self.grid[gy][gx]:
+                    return True
+
+        return False
+
+    def burn_current_tetromin_into_grid(self):
+        # TODO: this will crash when figure has collision at the top of the grid
+        # the collision check ignores the y < 0 checks and burning into the grid will go out of bounds
+        tetro, tx, ty = self.unpack_current_tetromin()
+        tetro_grid = tetro.current_grid()
+        for y in range(tetro.height()):
+            for x in range(tetro.width()):
+                if tetro_grid[y][x]:
+                    self.grid[ty+y][tx+x] = tetro.color
+
+    def tetromin_down(self, process_logic_on_collision=True):
+        self.current_tetromin['y'] += 1
+        if collides := self.does_current_tetromin_collide():
+            self.current_tetromin['y'] -= 1
+            if process_logic_on_collision:
+                self.burn_current_tetromin_into_grid()
+                self.set_next_tetromin()
+        return collides
+
+    def tetromin_left(self):
+        self.current_tetromin['x'] -= 1
+        if collides := self.does_current_tetromin_collide():
+            self.current_tetromin['x'] += 1
+        return collides
+
+    def tetromin_right(self):
+        self.current_tetromin['x'] += 1
+        if collides := self.does_current_tetromin_collide():
+            self.current_tetromin['x'] -= 1
+        return collides
+
+    def tetromin_rotate(self):
+        self.current_tetromin['tetro'].rotate()
+        if collides := self.does_current_tetromin_collide():
+            self.current_tetromin['tetro'].rotate(backward=True)
+        return collides
+
+    def tetromin_falldown(self):
+        raise "not implemented"
+
     def get_render_grid(self):
         render_grid = [[self.grid[i][j] for j in range(self.width)]
                        for i in range(self.height)]
         current_tetro = self.current_tetromin
-        tetro = current_tetro['tetro']
-        tx = current_tetro['x']
-        ty = current_tetro['y']
+
+        tetro, tx, ty = self.unpack_current_tetromin()
         tetro_grid = tetro.current_grid()
+
         for y in range(tetro.height()):
             for x in range(tetro.width()):
                 gx = tx+x
@@ -57,31 +124,30 @@ TSM = TetrisStateMachine()
 def key_press(event):
     print("pressed", event, repr(event.keysym), event.keysym == 'Left')
     if event.keysym == 'Up':
-        # TSM.tetro_rotate()
-        TSM.current_tetromin['tetro'].rotate()
+        TSM.tetromin_rotate()
     if event.keysym == 'Left':
-        # TSM.tetro_left()
-        TSM.current_tetromin['x'] -= 1
+        TSM.tetromin_left()
     if event.keysym == 'Right':
-        # TSM.tetro_right()
-        TSM.current_tetromin['x'] += 1
+        TSM.tetromin_right()
     if event.keysym == 'Down':
-        # TSM.tetro_down()
-        TSM.current_tetromin['y'] += 1
+        TSM.tetromin_down()
     if event.keysym == 'space':
-        # TSM.tetro_fall_down()
-        TSM.set_next_tetromin()
+        TSM.tetromin_falldown()
+
     on_gameloop(False)
     # TODO: state machine .key_left(), key_right(), ...
 
 
 def on_gameloop(auto_loop=True):
+    # TODO: Remove auto_loop=True.
+    # do deltaTime and render if enough time was passed. This way we can correctly implement fast down shift of tetromins.
+
     x = int(random() * GRID_WIDTH)
     y = int(random() * GRID_HEIGHT)
     grid = TSM.get_render_grid()
     if auto_loop:
         # TSM.tetro_down() -> logic checks if col and spawns next.
-        TSM.current_tetromin['y'] += 1
+        TSM.tetromin_down()
         tk_root.after(500, on_gameloop)
     render(canvas, grid)
 
@@ -107,5 +173,6 @@ def start():
     tk_root.bind("<Key>", key_press)
     on_gameloop()
     tk.mainloop()
+
 
 start()
