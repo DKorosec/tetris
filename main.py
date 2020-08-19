@@ -31,7 +31,7 @@ class TetrisStateMachine:
         self.grid = [[None for j in range(self.width)]
                      for i in range(self.height)]
         self.last_game_tick_ms = 0
-        self.game_tick_ms_T = 500
+        self.game_tick_ms_T = 1000
         self.set_next_tetromin()
 
     def should_game_tick(self):
@@ -187,6 +187,14 @@ def key_press(event):
     render(canvas, TSM.get_render_grid())
 
 
+def on_aiplay():
+    command_sequence = TSM.ai_commands()
+    for command in command_sequence:
+        key_press(command)
+        render()
+        sleep(16)
+
+
 def on_gameloop():
     if TSM.should_game_tick():
         TSM.next_game_tick()
@@ -212,6 +220,11 @@ def render(canvas, grid):
             render_rect(canvas, x_idx * SQUARE_SIZE_PX, y_idx *
                         SQUARE_SIZE_PX, SQUARE_SIZE_PX, item or 'white')
 
+# TODO:
+# Scoring
+# End game
+# Next piece?
+# Invisible roof of spawning pieces! (first tick is invisible, the next one is not!)
 
 def start():
     tk_root.bind("<Key>", key_press)
