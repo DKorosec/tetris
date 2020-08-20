@@ -32,11 +32,17 @@ class TetrisStateMachine:
                      for i in range(self.height)]
         self.last_game_tick_ms = 0
         self.game_tick_ms_T = 1000
+        self.game_score = 0
+        self.game_lines_cleared = 0
+        self.game_level = 0
         self.set_next_tetromin()
+
+    def get_current_game_tick_ms_T(self):
+        return int(max(0, (0.8-((self.game_level)*0.007))**(self.game_level) * 1000))
 
     def should_game_tick(self):
         now = ms_now()
-        return now - self.last_game_tick_ms >= self.game_tick_ms_T
+        return now - self.last_game_tick_ms >= self.get_current_game_tick_ms_T()
 
     def skip_game_tick(self):
         self.last_game_tick_ms = ms_now()
@@ -96,11 +102,27 @@ class TetrisStateMachine:
     def break_full_rows(self):
         y = self.height - 1
         # go up the rows!
+        lines_combo = 0
         while y >= 0:
             if self.is_row_full(y):
                 self.remove_row(y)
+                lines_combo += 1
             else:
                 y -= 1
+                if lines_combo > 0:
+                    self.apply_lines_cleared(lines_combo)
+                    lines_combo = 0
+
+    def apply_lines_cleared(self, lines_cleared: int):
+        self.game_score += self.calculate_break_rows_score(lines_cleared)
+        self.game_lines_cleared += lines_cleared
+        self.game_level = self.game_lines_cleared // 10
+
+    def calculate_break_rows_score(self, lines_combo: int) -> int:
+        max_lines_combo = 4
+        lines_multiplier = [0, 40, 100, 300, 1200]  # 1 2 3 and 4
+        lines_combo = min(lines_combo, max_lines_combo)
+        return lines_multiplier[lines_combo] * (self.game_level + 1)
 
     def burn_current_tetromin_into_grid(self):
         # TODO: this will crash when figure has collision at the top of the grid
@@ -142,9 +164,11 @@ class TetrisStateMachine:
             self.current_tetromin['tetro'].rotate(backward=True)
         return collides
 
-    def tetromin_falldown(self):
+    def tetromin_harddrop(self):
+        hard_drop_points = 0
         while not self.tetromin_down():
-            pass
+            hard_drop_points += 1
+        self.game_score += hard_drop_points
 
     def get_render_grid(self):
         render_grid = [[self.grid[i][j] for j in range(self.width)]
@@ -182,12 +206,13 @@ def key_press(event):
         TSM.tetromin_down()
 
     elif event.keysym == 'space':
-        TSM.tetromin_falldown()
+        TSM.tetromin_harddrop()
 
     render(canvas, TSM.get_render_grid())
 
 
 def on_aiplay():
+    # this is not working. its just a pseudo code of 'intepretation'
     command_sequence = TSM.ai_commands()
     for command in command_sequence:
         key_press(command)
@@ -221,10 +246,11 @@ def render(canvas, grid):
                         SQUARE_SIZE_PX, SQUARE_SIZE_PX, item or 'white')
 
 # TODO:
-# Scoring
+# Scoring -> DROP DOWN  -> Combo -> Levels
 # End game
-# Next piece?
+# Next piece peak?
 # Invisible roof of spawning pieces! (first tick is invisible, the next one is not!)
+
 
 def start():
     tk_root.bind("<Key>", key_press)
