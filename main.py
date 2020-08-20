@@ -16,8 +16,17 @@ CANVAS_HEIGHT = GRID_HEIGHT * SQUARE_SIZE_PX + CANVAS_BORDER_WIDTH
 
 tk_root = tk.Tk()
 tk_root.title('PyTetris')
+
+level_label_text = tk.StringVar()
+level_label = tk.Label(tk_root, textvariable=level_label_text)
+level_label.grid(row=0, column=0, sticky="w", padx=CANVAS_BORDER_WIDTH//2)
+
+score_label_text = tk.StringVar()
+score_label = tk.Label(tk_root, textvariable=score_label_text)
+score_label.grid(row=0, column=0, sticky="e", padx=CANVAS_BORDER_WIDTH//2)
+
 canvas = tk.Canvas(tk_root, width=CANVAS_WIDTH, height=CANVAS_HEIGHT)
-canvas.pack()
+canvas.grid(row=2, column=0)
 
 
 def ms_now():
@@ -38,7 +47,8 @@ class TetrisStateMachine:
         self.set_next_tetromin()
 
     def get_current_game_tick_ms_T(self):
-        return int(max(0, (0.8-((self.game_level)*0.007))**(self.game_level) * 1000))
+        game_speed_seconds = (0.8-self.game_level*0.007)**self.game_level
+        return int(max(0, game_speed_seconds)*1000)
 
     def should_game_tick(self):
         now = ms_now()
@@ -224,6 +234,8 @@ def on_gameloop():
     if TSM.should_game_tick():
         TSM.next_game_tick()
         render(canvas, TSM.get_render_grid())
+    level_label_text.set(f'Level: {TSM.game_level+1}')
+    score_label_text.set(f'Score: {TSM.game_score}')
     tk_root.after(16, on_gameloop)
 
 
@@ -246,7 +258,6 @@ def render(canvas, grid):
                         SQUARE_SIZE_PX, SQUARE_SIZE_PX, item or 'white')
 
 # TODO:
-# Scoring -> DROP DOWN  -> Combo -> Levels
 # End game
 # Next piece peak?
 # Invisible roof of spawning pieces! (first tick is invisible, the next one is not!)
