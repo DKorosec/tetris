@@ -35,9 +35,8 @@ class TetrisStateMachine:
         self.game_lines_cleared = 0
         self.game_level = 0
         self.game_is_over = False
-        # TODO: watch out when next piece is predicted with set next tetromin
-        # here we must "destroy" the prediction so it doesn't get picked up again.
         self.current_tetromin = None
+        self.next_tetromin = None
         self.set_next_tetromin()
         self.start()
 
@@ -63,14 +62,16 @@ class TetrisStateMachine:
         self.tetromin_down()
 
     def set_next_tetromin(self):
-        tetro = tetromin_list[int(random()*len(tetromin_list))]()
+        def generate_next_tetromin():
+            return tetromin_list[int(random()*len(tetromin_list))]()
 
         self.current_tetromin = {
-            'tetro': tetro,
+            'tetro': self.next_tetromin or generate_next_tetromin(),
             'x': self.width//2 - 1,
             'y': 1
         }
 
+        self.next_tetromin = generate_next_tetromin()
         # checks if current tetromin that was placed is in red zone or "end game"
         if self.current_tetromin and self.does_current_tetromin_collide() and self.is_current_tetromin_in_spawn_area():
             self.game_is_over = True

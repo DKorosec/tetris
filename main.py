@@ -9,43 +9,76 @@ CANVAS_WIDTH = GRID_WIDTH * SQUARE_SIZE_PX + CANVAS_BORDER_WIDTH
 CANVAS_HEIGHT = (GRID_HEIGHT - GRID_HEIGHT_INVISIBLE) * \
     SQUARE_SIZE_PX + CANVAS_BORDER_WIDTH
 
+GRID_NEXT_TETROMIN_WIDTH = 4
+GRID_NEXT_TETROMIN_HEIGHT = 2
+CANVAS_NEXT_TETROMIN_WIDTH = SQUARE_SIZE_PX * \
+    GRID_NEXT_TETROMIN_WIDTH + CANVAS_BORDER_WIDTH
+CANVAS_NEXT_TETROMIN_HEIGHT = SQUARE_SIZE_PX * \
+    GRID_NEXT_TETROMIN_HEIGHT + CANVAS_BORDER_WIDTH
+
 
 tk_root = tk.Tk()
+tk_root.resizable(False, False)
 tk_root.title('PyTetris')
+
+
+tk_root.grid_rowconfigure(3, weight=1)
+# labels
 
 level_label_text = tk.StringVar()
 level_label = tk.Label(tk_root, textvariable=level_label_text)
-level_label.grid(row=0, column=0, sticky="w", padx=CANVAS_BORDER_WIDTH//2)
-
-gameover_label_text = tk.StringVar()
-gameover_label = tk.Label(tk_root, textvariable=gameover_label_text)
-gameover_label.grid(row=0, column=1, sticky="we")
+level_label.grid(row=0, column=1, sticky="nw", pady=CANVAS_BORDER_WIDTH//2)
 
 score_label_text = tk.StringVar()
 score_label = tk.Label(tk_root, textvariable=score_label_text)
-score_label.grid(row=0, column=2, sticky="e", padx=CANVAS_BORDER_WIDTH//2)
+score_label.grid(row=1, column=1, sticky="nw")
 
+gameover_label_text = tk.StringVar()
+gameover_label = tk.Label(tk_root, textvariable=gameover_label_text)
+gameover_label.grid(row=3, column=1, sticky="new")
+
+# render canvases
 canvas = tk.Canvas(tk_root, width=CANVAS_WIDTH, height=CANVAS_HEIGHT)
-canvas.grid(row=1, column=0, columnspan=3)
+canvas.grid(row=0, column=0, columnspan=1, rowspan=4)
+
+next_tetromin_canvas = tk.Canvas(
+    tk_root, width=CANVAS_NEXT_TETROMIN_WIDTH, height=CANVAS_NEXT_TETROMIN_HEIGHT, highlightbackground='black', highlightthickness=1)
+next_tetromin_canvas.grid(
+    row=2, column=1, pady=CANVAS_BORDER_WIDTH*2, padx=CANVAS_BORDER_WIDTH//2, sticky="nw")
 
 
-def render(canvas, grid):
+def render(canvas):
     def render_rect(canvas, x, y, dim, fill):
         x += CANVAS_BORDER_WIDTH // 2 + 1
         y += CANVAS_BORDER_WIDTH // 2 + 1
         canvas.create_rectangle(x, y, x+dim, y+dim, fill=fill, outline='black')
 
+    grid = TSM.get_render_grid()
     canvas.delete(tk.ALL)
+    next_tetromin_canvas.delete(tk.ALL)
     for y_idx in range(GRID_HEIGHT_INVISIBLE, GRID_HEIGHT):
         for x_idx in range(GRID_WIDTH):
             item = grid[y_idx][x_idx]
             render_rect(canvas, x_idx * SQUARE_SIZE_PX, (y_idx-GRID_HEIGHT_INVISIBLE) *
-                        SQUARE_SIZE_PX, SQUARE_SIZE_PX, item or 'gray')
+                        SQUARE_SIZE_PX, SQUARE_SIZE_PX, item or 'grey')
+
+    next_tetro = TSM.next_tetromin
+    next_tetro_grid = next_tetro.current_grid()
+
+    # we know that tetro with 0 rotations (default state) is always defined in first two rows!
+    render_offset = CANVAS_NEXT_TETROMIN_WIDTH/2 - \
+        (next_tetro.width()*SQUARE_SIZE_PX / 2) - CANVAS_BORDER_WIDTH / 2
+    for y in range(2):
+        for x in range(next_tetro.width()):
+            if next_tetro_grid[y][x]:
+                render_rect(next_tetromin_canvas, render_offset + x * SQUARE_SIZE_PX,
+                            y*SQUARE_SIZE_PX, SQUARE_SIZE_PX, next_tetro.color)
 
     level_label_text.set(f'Level: {TSM.game_level+1}')
     score_label_text.set(f'Score: {TSM.game_score}')
+    nl = '\n\r'
     gameover_label_text.set(
-        f'{"GAME OVER! (R = Restart)" if TSM.game_is_over else "(R = Restart)"}')
+        f'{f"GAME OVER!{nl}(R = Restart)" if TSM.game_is_over else "(R = Restart)"}')
 
 
 def key_press(event):
@@ -68,27 +101,35 @@ def key_press(event):
     elif event.keysym.lower() == 'r':
         TSM.reset()
 
-    render(canvas, TSM.get_render_grid())
+    render(canvas)
 
 
 def on_gameloop():
     if TSM.should_game_tick():
         TSM.next_game_tick()
-    render(canvas, TSM.get_render_grid())
+
+    render(canvas)
     tk_root.after(16, on_gameloop)
 
 
+def center(win):
+    win.update_idletasks()
+    width = win.winfo_width()
+    height = win.winfo_height()
+    x = (win.winfo_screenwidth() // 2) - (width // 2)
+    y = (win.winfo_screenheight() // 2) - (height // 2)
+    win.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+
 def start():
     tk_root.bind("<Key>", key_press)
+    center(tk_root)
     TSM.start()
     on_gameloop()
     tk.mainloop()
 
 
 start()
-
 # TODO:
-# * Next piece on the line (UI and functionality - watch todo in on reset())
 # * AI!
 # def on_aiplay():
 #     # this is not working. its just a pseudo code of 'intepretation'
