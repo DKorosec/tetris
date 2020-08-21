@@ -144,7 +144,7 @@ def handle_window_resizing():
     next_tetromin_canvas.configure(
         height=CANVAS_NEXT_TETROMIN_HEIGHT, width=CANVAS_NEXT_TETROMIN_WIDTH)
 
-    canvas.grid_configure(padx=(tk_root.winfo_width()//3, 0)
+    canvas.grid_configure(padx=(tk_root.winfo_width()//2 - canvas.winfo_width()//2, 0)
                           if TOGGLE_FULLSCREEN else (0, 0))
 
 
@@ -167,6 +167,7 @@ def start():
 
 start()
 # TODO:
+# * Sound! -> https://python-sounddevice.readthedocs.io/en/0.4.0/usage.html#?
 # * AI!
 # def on_aiplay():
 #     # this is not working. its just a pseudo code of 'intepretation'
