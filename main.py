@@ -3,6 +3,7 @@ from random import random
 from lib.tetris_state_machine import TetrisStateMachine, GRID_HEIGHT, GRID_WIDTH, GRID_HEIGHT_INVISIBLE
 
 TSM = TetrisStateMachine()
+TOGGLE_FULLSCREEN = False
 SQUARE_SIZE_PX = 30
 CANVAS_BORDER_WIDTH = 10
 CANVAS_WIDTH = GRID_WIDTH * SQUARE_SIZE_PX + CANVAS_BORDER_WIDTH
@@ -44,7 +45,7 @@ canvas.grid(row=0, column=0, columnspan=1, rowspan=4)
 next_tetromin_canvas = tk.Canvas(
     tk_root, width=CANVAS_NEXT_TETROMIN_WIDTH, height=CANVAS_NEXT_TETROMIN_HEIGHT, highlightbackground='black', highlightthickness=1)
 next_tetromin_canvas.grid(
-    row=2, column=1, pady=CANVAS_BORDER_WIDTH*2, padx=CANVAS_BORDER_WIDTH//2, sticky="nw")
+    row=2, column=1, pady=CANVAS_BORDER_WIDTH*2, padx=CANVAS_BORDER_WIDTH, sticky="nw")
 
 
 def render(canvas):
@@ -76,13 +77,14 @@ def render(canvas):
 
     level_label_text.set(f'Level: {TSM.game_level+1}')
     score_label_text.set(f'Score: {TSM.game_score}')
-    controls_text = 'Controls:\n\rArrow keys = Move figure\n\rSpace = Hard drop\n\rR = Restart'
+    controls_text = 'Controls:\n\rArrow keys = Move figure\n\rSpace = Hard drop\n\rR = Restart\n\r----\n\rF11 = Toggle fullscreen'
     nl = '\n\r'
     gameover_label_text.set(
         f'{f"GAME OVER!{nl}Press R to restart" if TSM.game_is_over else f"{controls_text}"}')
 
 
 def key_press(event):
+    global TOGGLE_FULLSCREEN
     print("key pressed", event, repr(event.keysym))
     if event.keysym == 'Up':
         TSM.tetromin_rotate()
@@ -102,6 +104,10 @@ def key_press(event):
     elif event.keysym.lower() == 'r':
         TSM.reset()
 
+    elif event.keysym == 'F11':
+        tk_root.attributes('-fullscreen', not TOGGLE_FULLSCREEN)
+        TOGGLE_FULLSCREEN = not TOGGLE_FULLSCREEN
+
     render(canvas)
 
 
@@ -111,6 +117,32 @@ def on_gameloop():
 
     render(canvas)
     tk_root.after(16, on_gameloop)
+    handle_window_resizing()
+
+
+def handle_window_resizing():
+    global SQUARE_SIZE_PX
+    global CANVAS_NEXT_TETROMIN_WIDTH
+    global CANVAS_NEXT_TETROMIN_HEIGHT
+    global CANVAS_WIDTH
+    global CANVAS_HEIGHT
+
+    SQUARE_SIZE_PX = (tk_root.winfo_height() - CANVAS_BORDER_WIDTH //
+                      2) // (GRID_HEIGHT - GRID_HEIGHT_INVISIBLE)
+
+    CANVAS_NEXT_TETROMIN_WIDTH = SQUARE_SIZE_PX * \
+        GRID_NEXT_TETROMIN_WIDTH + CANVAS_BORDER_WIDTH
+
+    CANVAS_NEXT_TETROMIN_HEIGHT = SQUARE_SIZE_PX * \
+        GRID_NEXT_TETROMIN_HEIGHT + CANVAS_BORDER_WIDTH
+
+    CANVAS_WIDTH = (GRID_WIDTH+0.25) * SQUARE_SIZE_PX
+    CANVAS_HEIGHT = tk_root.winfo_height() + CANVAS_BORDER_WIDTH
+
+    canvas.configure(height=CANVAS_HEIGHT, width=CANVAS_WIDTH)
+
+    next_tetromin_canvas.configure(
+        height=CANVAS_NEXT_TETROMIN_HEIGHT, width=CANVAS_NEXT_TETROMIN_WIDTH)
 
 
 def center(win):
@@ -120,6 +152,7 @@ def center(win):
     x = (win.winfo_screenwidth() // 2) - (width // 2)
     y = (win.winfo_screenheight() // 2) - (height // 2)
     win.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+
 
 def start():
     tk_root.bind("<Key>", key_press)
