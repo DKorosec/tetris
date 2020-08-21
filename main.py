@@ -33,14 +33,14 @@ def render(canvas, grid):
     def render_rect(canvas, x, y, dim, fill):
         x += CANVAS_BORDER_WIDTH // 2 + 1
         y += CANVAS_BORDER_WIDTH // 2 + 1
-        canvas.create_rectangle(x, y, x+dim, y+dim, fill=fill)
+        canvas.create_rectangle(x, y, x+dim, y+dim, fill=fill, outline='black')
 
     canvas.delete(tk.ALL)
     for y_idx in range(GRID_HEIGHT_INVISIBLE, GRID_HEIGHT):
         for x_idx in range(GRID_WIDTH):
             item = grid[y_idx][x_idx]
             render_rect(canvas, x_idx * SQUARE_SIZE_PX, (y_idx-GRID_HEIGHT_INVISIBLE) *
-                        SQUARE_SIZE_PX, SQUARE_SIZE_PX, item or 'white')
+                        SQUARE_SIZE_PX, SQUARE_SIZE_PX, item or 'gray')
 
     level_label_text.set(f'Level: {TSM.game_level+1}')
     score_label_text.set(f'Score: {TSM.game_score}')

@@ -8,4 +8,4 @@ class OTetromin(Tetromin):
                 [1, 1],
                 [1, 1]
             ]
-        ], 'yellow')
+        ], 'yellow2')

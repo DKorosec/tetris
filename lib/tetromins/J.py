@@ -24,4 +24,4 @@ class JTetromin(Tetromin):
                 [0, 1, 0],
                 [1, 1, 0]
             ]
-        ], 'blue')
+        ], 'DodgerBlue3')
