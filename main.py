@@ -40,12 +40,12 @@ gameover_label.grid(row=3, column=1, sticky="new")
 
 # render canvases
 canvas = tk.Canvas(tk_root, width=CANVAS_WIDTH, height=CANVAS_HEIGHT)
-canvas.grid(row=0, column=0, columnspan=1, rowspan=4)
+canvas.grid(row=0, column=0, rowspan=4, sticky="NESW")
 
 next_tetromin_canvas = tk.Canvas(
     tk_root, width=CANVAS_NEXT_TETROMIN_WIDTH, height=CANVAS_NEXT_TETROMIN_HEIGHT, highlightbackground='black', highlightthickness=1)
 next_tetromin_canvas.grid(
-    row=2, column=1, pady=CANVAS_BORDER_WIDTH*2, padx=CANVAS_BORDER_WIDTH, sticky="nw")
+    row=2, column=1, pady=CANVAS_BORDER_WIDTH*2, padx=CANVAS_BORDER_WIDTH, sticky="NESW")
 
 
 def render(canvas):
@@ -105,8 +105,8 @@ def key_press(event):
         TSM.reset()
 
     elif event.keysym == 'F11':
-        tk_root.attributes('-fullscreen', not TOGGLE_FULLSCREEN)
         TOGGLE_FULLSCREEN = not TOGGLE_FULLSCREEN
+        tk_root.attributes('-fullscreen', TOGGLE_FULLSCREEN)
 
     render(canvas)
 
@@ -143,6 +143,9 @@ def handle_window_resizing():
 
     next_tetromin_canvas.configure(
         height=CANVAS_NEXT_TETROMIN_HEIGHT, width=CANVAS_NEXT_TETROMIN_WIDTH)
+
+    canvas.grid_configure(padx=(tk_root.winfo_width()//3, 0)
+                          if TOGGLE_FULLSCREEN else (0, 0))
 
 
 def center(win):
