@@ -76,9 +76,10 @@ def render(canvas):
 
     level_label_text.set(f'Level: {TSM.game_level+1}')
     score_label_text.set(f'Score: {TSM.game_score}')
+    controls_text = 'Controls:\n\rArrow keys = Move figure\n\rSpace = Hard drop\n\rR = Restart'
     nl = '\n\r'
     gameover_label_text.set(
-        f'{f"GAME OVER!{nl}(R = Restart)" if TSM.game_is_over else "(R = Restart)"}')
+        f'{f"GAME OVER!{nl}Press R to restart" if TSM.game_is_over else f"{controls_text}"}')
 
 
 def key_press(event):
