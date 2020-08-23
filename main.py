@@ -1,6 +1,4 @@
 from time import sleep
-import sounddevice as sd
-import soundfile as sf
 import tkinter as tk
 from random import random
 from lib.tetris_state_machine import TetrisStateMachine, GRID_HEIGHT, GRID_WIDTH, GRID_HEIGHT_INVISIBLE
