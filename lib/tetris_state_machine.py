@@ -95,14 +95,12 @@ class TetrisStateMachine:
         self.current_tetromin = None
         self.next_tetromin = None
         self.set_next_tetromin()
+        sound.stretch_factor = 1
         if start:
             self.start()
 
     def start(self):
         self.last_game_tick_ms = ms_now()
-        #sound_start.stretch_factor = 1
-        #sound_start.pitch_shift = 1
-        #sound_start.volume = 0.1
         sound_start.play()
         sampler.play(sound)
 
@@ -140,6 +138,7 @@ class TetrisStateMachine:
         if self.current_tetromin and self.does_current_tetromin_collide() and self.is_current_tetromin_in_spawn_area():
             self.game_is_over = True
             sound_gameover.play()
+            sound.stretch_factor = 0.25
             return
 
         self.skip_game_tick()
