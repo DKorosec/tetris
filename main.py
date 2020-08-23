@@ -1,3 +1,4 @@
+from time import sleep
 import tkinter as tk
 from random import random
 from lib.tetris_state_machine import TetrisStateMachine, GRID_HEIGHT, GRID_WIDTH, GRID_HEIGHT_INVISIBLE
@@ -19,6 +20,7 @@ CANVAS_NEXT_TETROMIN_HEIGHT = SQUARE_SIZE_PX * \
 
 
 tk_root = tk.Tk()
+tk_root.iconphoto(False, tk.PhotoImage(file='icon.png'))
 tk_root.resizable(False, False)
 tk_root.title('PyTetris')
 
@@ -75,17 +77,20 @@ def render(canvas):
                 render_rect(next_tetromin_canvas, render_offset + x * SQUARE_SIZE_PX,
                             y*SQUARE_SIZE_PX, SQUARE_SIZE_PX, next_tetro.color)
 
-    level_label_text.set(f'Level: {TSM.game_level+1}')
+    next_level_p = int((TSM.game_lines_cleared % 10)/10 * 100)
+    level_label_text.set(f'Level: {TSM.get_game_level()+1} ({next_level_p}%)')
     score_label_text.set(f'Score: {TSM.game_score}')
-    controls_text = 'Controls:\n\rArrow keys = Move figure\n\rSpace = Hard drop\n\rR = Restart\n\r----\n\rF11 = Toggle fullscreen'
+
     nl = '\n\r'
+    muted_mode_txt = 'ON' if TSM.is_muted() else 'OFF'
+    fullscreen_mode_txt = 'ON' if TOGGLE_FULLSCREEN else 'OFF'
+    controls_text = f'Controls:{nl}Arrow keys = Move figure{nl}Space = Hard drop{nl}R = Reset{nl}----{nl}F11=toggle fullscreen [{fullscreen_mode_txt}]{nl}M=toggle mute [{muted_mode_txt}]{nl}1-9=restart at level'
     gameover_label_text.set(
-        f'{f"GAME OVER!{nl}Press R to restart" if TSM.game_is_over else f"{controls_text}"}')
+        f'{f"GAME OVER!{nl}Press R to reset" if TSM.game_is_over else f"{controls_text}"}')
 
 
 def key_press(event):
     global TOGGLE_FULLSCREEN
-    print("key pressed", event, repr(event.keysym))
     if event.keysym == 'Up':
         TSM.tetromin_rotate()
 
@@ -104,9 +109,17 @@ def key_press(event):
     elif event.keysym.lower() == 'r':
         TSM.reset()
 
+    elif event.keysym.lower() == 'm':
+        TSM.unmute() if TSM.is_muted() else TSM.mute()
+
     elif event.keysym == 'F11':
         TOGGLE_FULLSCREEN = not TOGGLE_FULLSCREEN
         tk_root.attributes('-fullscreen', TOGGLE_FULLSCREEN)
+
+    elif event.keysym.isnumeric():
+        level_value = int(event.keysym)
+        if level_value > 0:
+            TSM.set_level(level_value-1)
 
     render(canvas)
 
@@ -160,14 +173,14 @@ def center(win):
 def start():
     tk_root.bind("<Key>", key_press)
     center(tk_root)
-    TSM.start()
+    TSM.reset()
     on_gameloop()
     tk.mainloop()
 
 
 start()
+
 # TODO:
-# * Sound! -> https://python-sounddevice.readthedocs.io/en/0.4.0/usage.html#?
 # * AI!
 # def on_aiplay():
 #     # this is not working. its just a pseudo code of 'intepretation'
