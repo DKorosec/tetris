@@ -4,48 +4,57 @@ from aupyom import Sampler, Sound
 from lib.tetromins.imports import tetromin_list
 import pygame
 
-
-
 GRID_WIDTH = 10
 GRID_HEIGHT_INVISIBLE = 2
 GRID_HEIGHT = 20 + GRID_HEIGHT_INVISIBLE
 
-
 sampler = Sampler()
-sound = Sound.from_file("sounds/sound_track.wav")
-sound.loop = True
-sound.volume = 0.5
-"""
-sound_start = Sound.from_file("sounds/se_game_start.wav")
-sound_harddrop = Sound.from_file("sounds/se_game_landing.wav")
-sound_move = Sound.from_file("sounds/se_game_move_2.wav")
-sound_rotate = Sound.from_file("sounds/se_game_rotate.wav")
-sound_lvlup = Sound.from_file("sounds/se_game_lvlup.wav")
-sound_invalid = Sound.from_file("sounds/se_sys_alert.wav")
-sound_gameover = Sound.from_file("sounds/se_game_gameover.wav")
+theme_bg_sound = Sound.from_file("sounds/sound_track.wav")
+theme_bg_sound.loop = True
+theme_bg_sound.volume = 0.5
 
-sound_combo1 = Sound.from_file("sounds/se_game_single.wav")
-sound_combo2 = Sound.from_file("sounds/se_game_double.wav")
-sound_combo3 = Sound.from_file("sounds/se_game_triple.wav")
-sound_combo4 = Sound.from_file("sounds/se_game_tetris.wav")
-"""
 pygame.mixer.pre_init(44100, -16, 1, 512)
 pygame.mixer.init()
-sound_start = pygame.mixer.Sound("sounds/se_game_start.wav")
-sound_start.set_volume(0.25)
-sound_harddrop = pygame.mixer.Sound("sounds/se_game_landing.wav")
-sound_move = pygame.mixer.Sound("sounds/se_game_move_2.wav")
-sound_move.set_volume(0.50)
-sound_rotate = pygame.mixer.Sound("sounds/se_game_rotate.wav")
-sound_rotate.set_volume(0.25)
-sound_lvlup = pygame.mixer.Sound("sounds/se_game_lvlup.wav")
-sound_invalid = pygame.mixer.Sound("sounds/se_sys_alert.wav")
-sound_gameover = pygame.mixer.Sound("sounds/se_game_gameover.wav")
+pygame_loaded_sounds = []
 
-sound_combo1 = pygame.mixer.Sound("sounds/se_game_single.wav")
-sound_combo2 = pygame.mixer.Sound("sounds/se_game_double.wav")
-sound_combo3 = pygame.mixer.Sound("sounds/se_game_triple.wav")
-sound_combo4 = pygame.mixer.Sound("sounds/se_game_tetris.wav")
+
+def unmute_pygame_sounds():
+    # required "hack/workaround" to call this fn else the library of aupyom bugs out.
+    theme_bg_sound._zero_padding()
+    theme_bg_sound.volume = 0.5
+    for sound in pygame_loaded_sounds:
+        sound['unmute']()
+
+
+def mute_pygame_sounds():
+    theme_bg_sound.volume = 0
+    for sound in pygame_loaded_sounds:
+        sound['mute']()
+
+
+def load_pygame_sound(filename, default_volume=1.0):
+    sound = pygame.mixer.Sound(filename)
+    sound.set_volume(default_volume)
+    pygame_loaded_sounds.append({
+        'sound': sound,
+        'unmute': lambda: sound.set_volume(default_volume),
+        'mute': lambda: sound.set_volume(0.0)
+    })
+    return sound
+
+
+sound_start = load_pygame_sound("sounds/se_game_start.wav", 0.25)
+sound_harddrop = load_pygame_sound("sounds/se_game_landing.wav")
+sound_move = load_pygame_sound("sounds/se_game_move_2.wav", 0.5)
+sound_rotate = load_pygame_sound("sounds/se_game_rotate.wav", 0.25)
+sound_lvlup = load_pygame_sound("sounds/se_game_lvlup.wav")
+sound_invalid = load_pygame_sound("sounds/se_sys_alert.wav")
+sound_gameover = load_pygame_sound("sounds/se_game_gameover.wav")
+
+sound_combo1 = load_pygame_sound("sounds/se_game_single.wav")
+sound_combo2 = load_pygame_sound("sounds/se_game_double.wav")
+sound_combo3 = load_pygame_sound("sounds/se_game_triple.wav")
+sound_combo4 = load_pygame_sound("sounds/se_game_tetris.wav")
 
 
 def ms_now():
@@ -68,9 +77,10 @@ class TetrisStateMachine:
         self.width = GRID_WIDTH
         self.height = GRID_HEIGHT
         self._game_level: int = None
+        self._muted = False
         self.reset(start=False)
 
-    def set_game_level(self, game_level: int):
+    def _set_game_level(self, game_level: int):
         if self._game_level != game_level:
             self._game_level = game_level
             if game_level > 0:
@@ -79,30 +89,48 @@ class TetrisStateMachine:
             level_speed = [0.87, 0.95, 1.01, 1.15, 1.27, 1.4,
                            1.5, 1.66, 1.77, 1.88, 1.99, 2.11, 2.22, 2.33]
             speed_lookup_i = min(game_level, len(level_speed)-1)
-            sound.stretch_factor = level_speed[speed_lookup_i] - 0.22
+            theme_bg_sound.stretch_factor = level_speed[speed_lookup_i] - 0.22
 
     def get_game_level(self) -> int:
         return self._game_level
 
     def reset(self, start=True):
+        theme_bg_sound.stretch_factor = 1
+        theme_bg_sound.pitch_shift = 0
+
         self.grid = [[None for j in range(self.width)]
                      for i in range(self.height)]
         self.last_game_tick_ms = 0
         self.game_score = 0
         self.game_lines_cleared = 0
-        self.set_game_level(0)
+        self._game_level = None
+        self._set_game_level(0)
         self.game_is_over = False
         self.current_tetromin = None
         self.next_tetromin = None
         self.set_next_tetromin()
-        sound.stretch_factor = 1
         if start:
             self.start()
+
+    def is_muted(self) -> bool:
+        return self._muted
+
+    def mute(self):
+        if self._muted:
+            return
+        self._muted = True
+        mute_pygame_sounds()
+
+    def unmute(self):
+        if not self._muted:
+            return
+        self._muted = False
+        unmute_pygame_sounds()
 
     def start(self):
         self.last_game_tick_ms = ms_now()
         sound_start.play()
-        sampler.play(sound)
+        sampler.play(theme_bg_sound)
 
     def get_current_game_tick_ms_T(self):
         game_level = self.get_game_level()
@@ -138,7 +166,8 @@ class TetrisStateMachine:
         if self.current_tetromin and self.does_current_tetromin_collide() and self.is_current_tetromin_in_spawn_area():
             self.game_is_over = True
             sound_gameover.play()
-            sound.stretch_factor = 0.25
+            theme_bg_sound.pitch_shift = 0.25
+            theme_bg_sound.stretch_factor = 0.25
             return
 
         self.skip_game_tick()
@@ -215,17 +244,12 @@ class TetrisStateMachine:
         if sound_combo:
             sound_combo.play()
         self.game_lines_cleared += lines_cleared
-        self.set_game_level(self.game_lines_cleared // 10)
+        self._set_game_level(self.game_lines_cleared // 10)
 
-    def TEST_LEVEL_UP(self):
-        # TODO: remove
-        self.game_lines_cleared += 10
-        self.set_game_level(self.game_lines_cleared // 10)
-
-    def TEST_LEVEL_DOWN(self):
-        # TODO: remove
-        self.game_lines_cleared -= 10
-        self.set_game_level(self.game_lines_cleared // 10)
+    def set_level(self, level: int):
+        self.reset(True)
+        self.game_lines_cleared = 10 * level
+        self._set_game_level(level)
 
     def calculate_break_rows_score(self, lines_combo: int) -> int:
         max_lines_combo = 4
