@@ -1,3 +1,6 @@
+from time import sleep
+import sounddevice as sd
+import soundfile as sf
 import tkinter as tk
 from random import random
 from lib.tetris_state_machine import TetrisStateMachine, GRID_HEIGHT, GRID_WIDTH, GRID_HEIGHT_INVISIBLE
@@ -75,13 +78,12 @@ def render(canvas):
                 render_rect(next_tetromin_canvas, render_offset + x * SQUARE_SIZE_PX,
                             y*SQUARE_SIZE_PX, SQUARE_SIZE_PX, next_tetro.color)
 
-    level_label_text.set(f'Level: {TSM.game_level+1}')
+    level_label_text.set(f'Level: {TSM.get_game_level()+1}')
     score_label_text.set(f'Score: {TSM.game_score}')
     controls_text = 'Controls:\n\rArrow keys = Move figure\n\rSpace = Hard drop\n\rR = Restart\n\r----\n\rF11 = Toggle fullscreen'
     nl = '\n\r'
     gameover_label_text.set(
         f'{f"GAME OVER!{nl}Press R to restart" if TSM.game_is_over else f"{controls_text}"}')
-
 
 def key_press(event):
     global TOGGLE_FULLSCREEN
@@ -103,6 +105,12 @@ def key_press(event):
 
     elif event.keysym.lower() == 'r':
         TSM.reset()
+
+    elif event.keysym.lower() == 'w':
+        TSM.TEST_LEVEL_UP()
+
+    elif event.keysym.lower() == 's':
+        TSM.TEST_LEVEL_DOWN()
 
     elif event.keysym == 'F11':
         TOGGLE_FULLSCREEN = not TOGGLE_FULLSCREEN
@@ -160,12 +168,47 @@ def center(win):
 def start():
     tk_root.bind("<Key>", key_press)
     center(tk_root)
-    TSM.start()
+    TSM.reset()
     on_gameloop()
     tk.mainloop()
 
 
 start()
+
+
+"""
+def KK(event):
+    if event.keysym == 'Up':
+        print('up')
+        sound.pitch_shift += 0.1
+        pass
+    elif event.keysym == 'Down':
+        print('down')
+        sound.pitch_shift -= 0.1
+        pass
+    elif event.keysym == 'Left':
+        print('left')
+        sound.stretch_factor -= 0.1
+        pass
+    elif event.keysym == 'Right':
+        print('right')
+        sound.stretch_factor += 0.5
+        pass
+    elif event.keysym.lower() == 'r':
+        print('r')
+        sound.stretch_factor = 1.0
+        sound.pitch_shift = 0
+        pass
+"""
+
+#TODO:
+# INTEGRATE SOUND INTO TSM
+# when destroy row.
+# when hard fall
+# when rotate.
+# when down "whop"
+
+# start()
 # TODO:
 # * Sound! -> https://python-sounddevice.readthedocs.io/en/0.4.0/usage.html#?
 # * AI!
