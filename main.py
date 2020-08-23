@@ -89,8 +89,28 @@ def render(canvas):
         f'{f"GAME OVER!{nl}Press R to reset" if TSM.game_is_over else f"{controls_text}"}')
 
 
+KONAMI_CODE = ['up', 'up', 'down', 'down',
+               'left', 'right', 'left', 'right', 'b', 'a']
+KONAMI_CODE_I = 0
+
+
+def handle_konami_code(string: str):
+    global KONAMI_CODE_I
+
+    if KONAMI_CODE_I == len(KONAMI_CODE):
+        tk_root.title('Huti Tuti')
+
+    elif string == KONAMI_CODE[KONAMI_CODE_I]:
+        KONAMI_CODE_I += 1
+        handle_konami_code('')
+    elif string != '':
+        KONAMI_CODE_I = 0
+
+
 def key_press(event):
     global TOGGLE_FULLSCREEN
+    handle_konami_code(event.keysym.lower())
+
     if event.keysym == 'Up':
         TSM.tetromin_rotate()
 
