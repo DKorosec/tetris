@@ -2,6 +2,9 @@ import time
 from random import random
 from aupyom import Sampler, Sound
 from lib.tetromins.imports import tetromin_list
+import pygame
+
+
 
 GRID_WIDTH = 10
 GRID_HEIGHT_INVISIBLE = 2
@@ -12,6 +15,7 @@ sampler = Sampler()
 sound = Sound.from_file("sounds/sound_track.wav")
 sound.loop = True
 sound.volume = 0.5
+"""
 sound_start = Sound.from_file("sounds/se_game_start.wav")
 sound_harddrop = Sound.from_file("sounds/se_game_landing.wav")
 sound_move = Sound.from_file("sounds/se_game_move_2.wav")
@@ -24,6 +28,21 @@ sound_combo1 = Sound.from_file("sounds/se_game_single.wav")
 sound_combo2 = Sound.from_file("sounds/se_game_double.wav")
 sound_combo3 = Sound.from_file("sounds/se_game_triple.wav")
 sound_combo4 = Sound.from_file("sounds/se_game_tetris.wav")
+"""
+pygame.mixer.pre_init(44100, -16, 1, 512)
+pygame.mixer.init()
+sound_start = pygame.mixer.Sound("sounds/se_game_start.wav")
+sound_harddrop = pygame.mixer.Sound("sounds/se_game_landing.wav")
+sound_move = pygame.mixer.Sound("sounds/se_game_move_2.wav")
+sound_rotate = pygame.mixer.Sound("sounds/se_game_rotate.wav")
+sound_lvlup = pygame.mixer.Sound("sounds/se_game_lvlup.wav")
+sound_invalid = pygame.mixer.Sound("sounds/se_sys_alert.wav")
+sound_gameover = pygame.mixer.Sound("sounds/se_game_gameover.wav")
+
+sound_combo1 = pygame.mixer.Sound("sounds/se_game_single.wav")
+sound_combo2 = pygame.mixer.Sound("sounds/se_game_double.wav")
+sound_combo3 = pygame.mixer.Sound("sounds/se_game_triple.wav")
+sound_combo4 = pygame.mixer.Sound("sounds/se_game_tetris.wav")
 
 
 def ms_now():
@@ -34,7 +53,7 @@ def disable_on_gameover(f):
     def wrapper(*args, **kwargs):
         self_tsm = args[0]
         if self_tsm.game_is_over:
-            sampler.play(sound_invalid)
+            sound_invalid.play()
             raise Exception(
                 'Game is over, you cannot pass controls to it anymore.')
         return f(*args, **kwargs)
@@ -52,7 +71,7 @@ class TetrisStateMachine:
         if self._game_level != game_level:
             self._game_level = game_level
             if game_level > 0:
-                sampler.play(sound_lvlup)
+                sound_lvlup.play()
             # handle music speed
             level_speed = [0.87, 0.95, 1.01, 1.15, 1.27, 1.4,
                            1.5, 1.66, 1.77, 1.88, 1.99, 2.11, 2.22, 2.33]
@@ -78,10 +97,10 @@ class TetrisStateMachine:
 
     def start(self):
         self.last_game_tick_ms = ms_now()
-        sound_start.stretch_factor = 1
-        sound_start.pitch_shift = 1
-        sound_start.volume = 0.1
-        sampler.play(sound_start)
+        #sound_start.stretch_factor = 1
+        #sound_start.pitch_shift = 1
+        #sound_start.volume = 0.1
+        sound_start.play()
         sampler.play(sound)
 
     def get_current_game_tick_ms_T(self):
@@ -117,7 +136,7 @@ class TetrisStateMachine:
         # checks if current tetromin that was placed is in red zone or "end game"
         if self.current_tetromin and self.does_current_tetromin_collide() and self.is_current_tetromin_in_spawn_area():
             self.game_is_over = True
-            sampler.play(sound_gameover)
+            sound_gameover.play()
             return
 
         self.skip_game_tick()
@@ -192,7 +211,7 @@ class TetrisStateMachine:
         sound_combo = [None, sound_combo1, sound_combo2,
                        sound_combo3, sound_combo4][min(lines_cleared, 4)]
         if sound_combo:
-            sampler.play(sound_combo)
+            sound_combo.play()
         self.game_lines_cleared += lines_cleared
         self.set_game_level(self.game_lines_cleared // 10)
 
@@ -227,9 +246,9 @@ class TetrisStateMachine:
         self.skip_game_tick()
         self.current_tetromin['y'] += 1
         if not ignore_move_sound:
-            sampler.play(sound_move)
+            sound_move.play()
         if collides := self.does_current_tetromin_collide():
-            sampler.play(sound_harddrop)
+            sound_harddrop.play()
             self.current_tetromin['y'] -= 1
             if process_logic_on_collision:
                 self.burn_current_tetromin_into_grid()
@@ -241,9 +260,9 @@ class TetrisStateMachine:
         self.current_tetromin['x'] -= 1
         if collides := self.does_current_tetromin_collide():
             self.current_tetromin['x'] += 1
-            sampler.play(sound_invalid)
+            sound_invalid.play()
         else:
-            sampler.play(sound_move)
+            sound_move.play()
         return collides
 
     @disable_on_gameover
@@ -251,9 +270,9 @@ class TetrisStateMachine:
         self.current_tetromin['x'] += 1
         if collides := self.does_current_tetromin_collide():
             self.current_tetromin['x'] -= 1
-            sampler.play(sound_invalid)
+            sound_invalid.play()
         else:
-            sampler.play(sound_move)
+            sound_move.play()
         return collides
 
     @disable_on_gameover
@@ -261,9 +280,9 @@ class TetrisStateMachine:
         self.current_tetromin['tetro'].rotate()
         if collides := self.does_current_tetromin_collide():
             self.current_tetromin['tetro'].rotate(backward=True)
-            sampler.play(sound_invalid)
+            sound_invalid.play()
         else:
-            sampler.play(sound_rotate)
+            sound_rotate.play()
         return collides
 
     @disable_on_gameover
