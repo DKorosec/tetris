@@ -281,6 +281,74 @@ class TetrisStateMachine:
                 self.set_next_tetromin()
         return collides
 
+    def _ai_try_down(self, reversed_success_op = False):
+        if reversed_success_op:
+            self.current_tetromin['y'] -= 1
+            return 
+
+        self.current_tetromin['y'] += 1
+        if collides := self.does_current_tetromin_collide():
+            self.current_tetromin['y'] -= 1
+        return not collides
+
+    def _ai_try_left(self, reversed_success_op = False):
+        if reversed_success_op:
+            self.current_tetromin['x'] += 1
+            return 
+        
+        self.current_tetromin['x'] -= 1
+        if collides := self.does_current_tetromin_collide():
+            self.current_tetromin['x'] += 1
+        return not collides
+
+    def _ai_try_right(self, reversed_success_op = False):
+        if reversed_success_op:
+            self.current_tetromin['x'] -= 1
+            return 
+
+        self.current_tetromin['x'] += 1
+        if collides := self.does_current_tetromin_collide():
+            self.current_tetromin['x'] -= 1
+        return not collides
+
+    def _ai_try_rotate(self, reversed_success_op = False):
+        if reversed_success_op:
+            self.current_tetromin['tetro'].rotate(backward=True)
+            return 
+
+        self.current_tetromin['tetro'].rotate()
+        if collides := self.does_current_tetromin_collide():
+            self.current_tetromin['tetro'].rotate(backward=True)
+        return not collides
+
+    def _ai_fit_best_grid(self, previous_ops):
+        "Brute force till you make it :^)"
+        evals = []
+        for rotation_count in range(4):
+            for test_method, op in [(self._ai_try_down, self.tetromin_down), (self._ai_try_left, self.tetromin_left), (self._ai_try_right, self.tetromin_right)]:
+                if test_method():
+                    evals.append(self._ai_fit_best_grid([*previous_ops, op]))
+                    test_method(reversed_success_op=True)
+                elif test_method == self._ai_try_down:
+                    finish_op = self.tetromin_down  #finish op to end the turn!
+                    final_ops = [*previous_ops, finish_op]
+                    grid = None # TODO: burn tetromin into grid!
+                    grid_eval = self._ai_rate_grid(grid)
+                    evals.append([grid_eval, final_ops]) # [SCORE, [op1,op2,op3,...,opN]]
+            
+            self._ai_try_rotate()
+
+        #TODO:
+        def best_eval(evals): # [... [SCORE, [op1,op2,op3,...,opN]] ... ]
+            return evals[0]
+
+        return max_op(evals)
+
+
+    def _ai_rate_grid(self, grid):
+        "this should rate the grid / fitness function!"
+        pass
+
     @disable_on_gameover
     def tetromin_left(self):
         self.current_tetromin['x'] -= 1
