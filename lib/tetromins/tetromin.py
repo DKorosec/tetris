@@ -14,6 +14,9 @@ class Tetromin:
     def height(self) -> int:
         return len(self.current_grid())
 
+    def defined_rotations(self) -> int:
+        return len(self.grid_rotations)
+        
     def current_rotation_i(self) -> int:
         return self.rotation % len(self.grid_rotations)
 

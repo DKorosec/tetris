@@ -219,11 +219,6 @@ def start():
 start()
 
 # TODO:
-# * AI!
-# def on_aiplay():
-#     # this is not working. its just a pseudo code of 'intepretation'
-#     command_sequence = TSM.ai_commands()
-#     for command in command_sequence:
-#         key_press(command)
-#         render()
-#         sleep(16)
+# * AI! -> ON / OFF autopilot mode !!!!
+# -> when OFF -> ON calculate INPUT QUEUE and disable ticking
+# -> when ON -> OFF destroy INPUT QUEUE and enable ticking
