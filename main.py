@@ -107,8 +107,12 @@ def handle_konami_code(string: str):
         KONAMI_CODE_I = 0
 
 
+COMMAND_QUEUE = []
+
+
 def key_press(event):
     global TOGGLE_FULLSCREEN
+    global COMMAND_QUEUE
     handle_konami_code(event.keysym.lower())
 
     if event.keysym == 'Up':
@@ -139,9 +143,16 @@ def key_press(event):
     elif event.keysym == 't':
         #import sys
         # sys.setrecursionlimit(int(1e4))
-        print('calculating...')
-        best_op = TSM._ai_fit_best_grid([])
-        print('done:', best_op[0], len(best_op[1]))
+
+        if not len(COMMAND_QUEUE):
+            print('calculating...')
+            best_op = TSM._ai_fit_best_grid([])
+            COMMAND_QUEUE = best_op[1]
+            print('done:', best_op[0], len(best_op[1]))
+        
+        cmd = COMMAND_QUEUE.pop(0)
+        print('left:', len(COMMAND_QUEUE))
+        cmd()
 
     elif event.keysym.isnumeric():
         level_value = int(event.keysym)
