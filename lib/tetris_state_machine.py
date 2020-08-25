@@ -281,73 +281,100 @@ class TetrisStateMachine:
                 self.set_next_tetromin()
         return collides
 
-    def _ai_try_down(self, reversed_success_op = False):
+    def _ai_try_down(self, reversed_success_op=False):
         if reversed_success_op:
             self.current_tetromin['y'] -= 1
-            return 
+            return
 
         self.current_tetromin['y'] += 1
         if collides := self.does_current_tetromin_collide():
             self.current_tetromin['y'] -= 1
         return not collides
 
-    def _ai_try_left(self, reversed_success_op = False):
+    def _ai_try_left(self, reversed_success_op=False):
         if reversed_success_op:
             self.current_tetromin['x'] += 1
-            return 
-        
+            return
+
         self.current_tetromin['x'] -= 1
         if collides := self.does_current_tetromin_collide():
             self.current_tetromin['x'] += 1
         return not collides
 
-    def _ai_try_right(self, reversed_success_op = False):
+    def _ai_try_right(self, reversed_success_op=False):
         if reversed_success_op:
             self.current_tetromin['x'] -= 1
-            return 
+            return
 
         self.current_tetromin['x'] += 1
         if collides := self.does_current_tetromin_collide():
             self.current_tetromin['x'] -= 1
         return not collides
 
-    def _ai_try_rotate(self, reversed_success_op = False):
+    def _ai_try_rotate(self, reversed_success_op=False):
         if reversed_success_op:
             self.current_tetromin['tetro'].rotate(backward=True)
-            return 
+            return
 
         self.current_tetromin['tetro'].rotate()
         if collides := self.does_current_tetromin_collide():
             self.current_tetromin['tetro'].rotate(backward=True)
         return not collides
 
-    def _ai_fit_best_grid(self, previous_ops):
+    def _ai_fit_best_grid(self, previous_ops, prev_sym=None, dynamic_grid=None):
         "Brute force till you make it :^)"
+        if not dynamic_grid:
+            dynamic_grid = [[None for j in range(self.width)]
+                            for i in range(self.height)]
+
+        cty = self.current_tetromin['y']
+        ctx = self.current_tetromin['x']
+        if dg_lookup := dynamic_grid[cty][ctx]:
+            return dg_lookup
+
+        # [... [SCORE, [op1,op2,op3,...,opN]] ... ]
         evals = []
-        for rotation_count in range(4):
-            for test_method, op in [(self._ai_try_down, self.tetromin_down), (self._ai_try_left, self.tetromin_left), (self._ai_try_right, self.tetromin_right)]:
-                if test_method():
-                    evals.append(self._ai_fit_best_grid([*previous_ops, op]))
-                    test_method(reversed_success_op=True)
-                elif test_method == self._ai_try_down:
-                    finish_op = self.tetromin_down  #finish op to end the turn!
-                    final_ops = [*previous_ops, finish_op]
-                    grid = None # TODO: burn tetromin into grid!
-                    grid_eval = self._ai_rate_grid(grid)
-                    evals.append([grid_eval, final_ops]) # [SCORE, [op1,op2,op3,...,opN]]
-            
-            self._ai_try_rotate()
+        # for rotation_count in range(1):
+        for test_method, op, sym in [(self._ai_try_down, self.tetromin_down, 'D'), (self._ai_try_left, self.tetromin_left, 'L'), (self._ai_try_right, self.tetromin_right, 'R')]:
+            # ignore this case, it will cause a loop!
+            if (sym == 'R' and prev_sym == 'L') or (sym == 'L' and prev_sym == 'R'):
+                continue
+            if test_method():
+                rec_eval = self._ai_fit_best_grid(
+                    previous_ops=[*previous_ops, op], prev_sym=sym, dynamic_grid=dynamic_grid)
+                evals.append(rec_eval)
+                test_method(reversed_success_op=True)
 
-        #TODO:
-        def best_eval(evals): # [... [SCORE, [op1,op2,op3,...,opN]] ... ]
-            return evals[0]
+            elif test_method == self._ai_try_down:
+                finish_op = self.tetromin_down  # finish op to end the turn!
+                final_ops = [*previous_ops, finish_op]
+                grid = self.get_render_grid()  # burn tetromin into grid!
+                grid_eval = self._ai_rate_grid(grid)
+                rate = [grid_eval, final_ops]
+                # [SCORE, [op1,op2,op3,...,opN]]
+                evals.append(rate)
+            # totation should be in ops!
 
-        return max_op(evals)
+            # if self._ai_try_rotate():
+            #    previous_ops = [*previous_ops, self.tetromin_rotate]
 
+        # minimize the error!
+        dynamic_grid[cty][ctx] = min(evals, key=lambda eval: eval[0])
+        return dynamic_grid[cty][ctx]
 
     def _ai_rate_grid(self, grid):
         "this should rate the grid / fitness function!"
-        pass
+        def column_size(column):
+            for y in range(0, self.height):
+                if grid[y][column] is not None:
+                    return (self.height-1)-y
+            return 0
+
+        # TODO: remove full rows from grid!
+
+        # TODO: holes add penalties?
+
+        return sum([column_size(x) for x in range(self.width)])
 
     @disable_on_gameover
     def tetromin_left(self):

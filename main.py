@@ -136,6 +136,13 @@ def key_press(event):
         TOGGLE_FULLSCREEN = not TOGGLE_FULLSCREEN
         tk_root.attributes('-fullscreen', TOGGLE_FULLSCREEN)
 
+    elif event.keysym == 't':
+        #import sys
+        # sys.setrecursionlimit(int(1e4))
+        print('calculating...')
+        best_op = TSM._ai_fit_best_grid([])
+        print('done:', best_op[0], len(best_op[1]))
+
     elif event.keysym.isnumeric():
         level_value = int(event.keysym)
         if level_value > 0:
@@ -145,8 +152,8 @@ def key_press(event):
 
 
 def on_gameloop():
-    if TSM.should_game_tick():
-        TSM.next_game_tick()
+    # if TSM.should_game_tick():
+    # TSM.next_game_tick()
 
     render(canvas)
     tk_root.after(16, on_gameloop)
