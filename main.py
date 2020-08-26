@@ -118,7 +118,6 @@ def unset_ai_commands():
     TOGGLE_AUTOPILOT = False
     COMMAND_QUEUE = []
 
-
 def key_press(event):
     global TOGGLE_FULLSCREEN
     global COMMAND_QUEUE
@@ -172,12 +171,11 @@ def on_gameloop():
     global COMMAND_QUEUE
     if TOGGLE_AUTOPILOT:
         if not len(COMMAND_QUEUE):
-            COMMAND_QUEUE = TSM.generate_best_fit_path_commands() or [
-                lambda: None]
+            COMMAND_QUEUE = TSM.generate_best_fit_path_commands() or [lambda: None]
 
-        cmd = COMMAND_QUEUE.pop(0)
+        cmd = COMMAND_QUEUE.pop(0) 
         cmd()
-    elif TSM.should_game_tick():
+    elif TSM.should_game_tick(): 
         TSM.next_game_tick()
 
     render(canvas)
