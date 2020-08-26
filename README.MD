@@ -15,6 +15,9 @@ Idea flow:
 1. Implement tetris rules ✔️
 2. Make it playable as human ✔️
 3. Make a heuristic AI playing it ✔️
+    * demo:
+    
+     ![AI-DEMO](./tetris-ai.gif)
 # IF I HAVE TIME IN THE FUTURE:
 4. Try to create machine learning AI to play it.
     * learning heuristic parameters for best fitness function.
