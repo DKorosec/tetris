@@ -274,7 +274,6 @@ class TetrisStateMachine:
         if not ignore_move_sound:
             sound_move.play()
         if collides := self.does_current_tetromin_collide():
-            print('play hadrdrop')
             sound_harddrop.play()
             self.current_tetromin['y'] -= 1
             if process_logic_on_collision:
