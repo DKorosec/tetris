@@ -1,10 +1,14 @@
 from time import sleep
 import tkinter as tk
 from random import random
-from lib.tetris_state_machine import TetrisStateMachine, GRID_HEIGHT, GRID_WIDTH, GRID_HEIGHT_INVISIBLE
+from lib.ai_tetris_state_machine import AiTetrisStateMachine
+from lib.tetris_state_machine import GRID_HEIGHT, GRID_WIDTH, GRID_HEIGHT_INVISIBLE
 
-TSM = TetrisStateMachine()
+TSM = AiTetrisStateMachine()
 TOGGLE_FULLSCREEN = False
+TOGGLE_AUTOPILOT = False
+COMMAND_QUEUE = []
+
 SQUARE_SIZE_PX = 30
 CANVAS_BORDER_WIDTH = 10
 CANVAS_WIDTH = GRID_WIDTH * SQUARE_SIZE_PX + CANVAS_BORDER_WIDTH
@@ -84,7 +88,8 @@ def render(canvas):
     nl = '\n\r'
     muted_mode_txt = 'ON' if TSM.is_muted() else 'OFF'
     fullscreen_mode_txt = 'ON' if TOGGLE_FULLSCREEN else 'OFF'
-    controls_text = f'Controls:{nl}Arrow keys = Move figure{nl}Space = Hard drop{nl}R = Reset{nl}----{nl}F11=toggle fullscreen [{fullscreen_mode_txt}]{nl}M=toggle mute [{muted_mode_txt}]{nl}1-9=restart at level'
+    autopilot_mode_txt = 'ON' if TOGGLE_AUTOPILOT else 'OFF'
+    controls_text = f'Controls:{nl}Arrow keys = Move figure{nl}Space = Hard drop{nl}R = Reset{nl}----{nl}F11=toggle fullscreen [{fullscreen_mode_txt}]{nl}M=toggle mute [{muted_mode_txt}]{nl}A=toggle autopilot [{autopilot_mode_txt}]{nl}1-9=restart at level'
     gameover_label_text.set(
         f'{f"GAME OVER!{nl}Press R to reset" if TSM.game_is_over else f"{controls_text}"}')
 
@@ -107,27 +112,38 @@ def handle_konami_code(string: str):
         KONAMI_CODE_I = 0
 
 
-COMMAND_QUEUE = []
+def unset_ai_commands():
+    global COMMAND_QUEUE
+    global TOGGLE_AUTOPILOT
+    TOGGLE_AUTOPILOT = False
+    COMMAND_QUEUE = []
 
 
 def key_press(event):
     global TOGGLE_FULLSCREEN
     global COMMAND_QUEUE
+    global TOGGLE_AUTOPILOT
+
     handle_konami_code(event.keysym.lower())
 
     if event.keysym == 'Up':
+        unset_ai_commands()
         TSM.tetromin_rotate()
 
     elif event.keysym == 'Left':
+        unset_ai_commands()
         TSM.tetromin_left()
 
     elif event.keysym == 'Right':
+        unset_ai_commands()
         TSM.tetromin_right()
 
     elif event.keysym == 'Down':
+        unset_ai_commands()
         TSM.tetromin_down()
 
     elif event.keysym == 'space':
+        unset_ai_commands()
         TSM.tetromin_harddrop()
 
     elif event.keysym.lower() == 'r':
@@ -140,19 +156,9 @@ def key_press(event):
         TOGGLE_FULLSCREEN = not TOGGLE_FULLSCREEN
         tk_root.attributes('-fullscreen', TOGGLE_FULLSCREEN)
 
-    elif event.keysym == 't':
-        #import sys
-        # sys.setrecursionlimit(int(1e4))
-
-        if not len(COMMAND_QUEUE):
-            print('calculating...')
-            best_op = TSM._ai_fit_best_grid([])
-            COMMAND_QUEUE = best_op[1]
-            print('done:', best_op[0], len(best_op[1]))
-        
-        cmd = COMMAND_QUEUE.pop(0)
-        print('left:', len(COMMAND_QUEUE))
-        cmd()
+    elif event.keysym.lower() == 'a':
+        TOGGLE_AUTOPILOT = not TOGGLE_AUTOPILOT
+        COMMAND_QUEUE = []
 
     elif event.keysym.isnumeric():
         level_value = int(event.keysym)
@@ -163,11 +169,19 @@ def key_press(event):
 
 
 def on_gameloop():
-    # if TSM.should_game_tick():
-    # TSM.next_game_tick()
+    global COMMAND_QUEUE
+    if TOGGLE_AUTOPILOT:
+        if not len(COMMAND_QUEUE):
+            COMMAND_QUEUE = TSM.generate_best_fit_path_commands() or [
+                lambda: None]
+
+        cmd = COMMAND_QUEUE.pop(0)
+        cmd()
+    elif TSM.should_game_tick():
+        TSM.next_game_tick()
 
     render(canvas)
-    tk_root.after(16, on_gameloop)
+    tk_root.after(1 if TOGGLE_AUTOPILOT else 16, on_gameloop)
     handle_window_resizing()
 
 
@@ -219,6 +233,4 @@ def start():
 start()
 
 # TODO:
-# * AI! -> ON / OFF autopilot mode !!!!
-# -> when OFF -> ON calculate INPUT QUEUE and disable ticking
-# -> when ON -> OFF destroy INPUT QUEUE and enable ticking
+# ML ai - meta learning the best heuristics? Somewhere in the future if i have time ;)
