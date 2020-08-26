@@ -5,6 +5,8 @@ Run with:
 
 _with each new level (everytime you break 10 lines) the background soundtrack gets faster to keep you in the beat!_
 
+* pressing 'A' will toggle autopilot mode (AI will take control)
+
 Preview:
 
 ![](preview.png)
@@ -12,8 +14,7 @@ Preview:
 Idea flow:
 1. Implement tetris rules ✔️
 2. Make it playable as human ✔️
-
-# WORK IN PROGRESS
-
-3. Make a heuristic AI playing it
+3. Make a heuristic AI playing it ✔️
+# IF I HAVE TIME IN THE FUTURE:
 4. Try to create machine learning AI to play it.
+    * learning heuristic parameters for best fitness function.

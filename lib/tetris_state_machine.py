@@ -282,23 +282,23 @@ class TetrisStateMachine:
         return collides
 
     @disable_on_gameover
-    def tetromin_left(self):
+    def tetromin_left(self, ignore_move_sound=False):
         self.current_tetromin['x'] -= 1
         if collides := self.does_current_tetromin_collide():
             self.current_tetromin['x'] += 1
-            sound_invalid.play()
+            not ignore_move_sound and sound_invalid.play()
         else:
-            sound_move.play()
+            not ignore_move_sound and sound_move.play()
         return collides
 
     @disable_on_gameover
-    def tetromin_right(self):
+    def tetromin_right(self, ignore_move_sound=False):
         self.current_tetromin['x'] += 1
         if collides := self.does_current_tetromin_collide():
             self.current_tetromin['x'] -= 1
-            sound_invalid.play()
+            not ignore_move_sound and sound_invalid.play()
         else:
-            sound_move.play()
+            not ignore_move_sound and sound_move.play()
         return collides
 
     @disable_on_gameover
