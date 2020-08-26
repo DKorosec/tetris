@@ -166,6 +166,9 @@ class AiTetrisStateMachine(TetrisStateMachine):
         break_full_rows(grid)
         top = min([column_max_i(x, grid) for x in range(self.width)])
 
+        if top <= 2:
+            return int(2**50) + (2 - top)
+
         if top == self.height:
             return 0
 
