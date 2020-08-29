@@ -18,6 +18,8 @@ Idea flow:
     * demo:
     
      ![AI-DEMO](./tetris-ai.gif)
+     
+     https://www.youtube.com/watch?v=5__42Hn5tVA
 # IF I HAVE TIME IN THE FUTURE:
 4. Try to create machine learning AI to play it.
     * learning heuristic parameters for best fitness function.
